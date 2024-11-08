@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Formulario Estudiantes</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <style>
+        #map { height: 400px; width: 100%; }
+    </style>
+</head>
+<body>
+    <h1>Registrar Estudiante</h1>
+    <form id="formEstudiante">
+        <label for="cedula">Cédula:</label><br>
+        <input type="text" id="cedula" name="cedula" required><br><br>
+
+        <label for="nombres">Nombres:</label><br>
+        <input type="text" id="nombres" name="nombres" required><br><br>
+
+        <label for="apellidos">Apellidos:</label><br>
+        <input type="text" id="apellidos" name="apellidos" required><br><br>
+
+        <label for="direccion_residencia">Dirección Residencia:</label><br>
+        <input type="text" id="direccion_residencia" name="direccion_residencia" required><br>
+        <label>Latitud Residencia:</label>
+        <input type="text" id="lat_residencia_text" readonly><br>
+        <label>Longitud Residencia:</label>
+        <input type="text" id="lon_residencia_text" readonly>
+        <input type="hidden" id="lat_residencia" name="lat_residencia">
+        <input type="hidden" id="lon_residencia" name="lon_residencia"><br><br>
+
+        <label for="direccion_trabajo">Dirección Trabajo:</label><br>
+        <input type="text" id="direccion_trabajo" name="direccion_trabajo" required><br>
+        <label>Latitud Trabajo:</label>
+        <input type="text" id="lat_trabajo_text" readonly><br>
+        <label>Longitud Trabajo:</label>
+        <input type="text" id="lon_trabajo_text" readonly>
+        <input type="hidden" id="lat_trabajo" name="lat_trabajo">
+        <input type="hidden" id="lon_trabajo" name="lon_trabajo"><br><br>
+
+        <input type="submit" value="Registrar Estudiante">
+    </form>
+
+    <h3>Ubicaciones</h3>
+    <div id="map"></div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+    <script>
+        let map, markerResidencia, markerTrabajo;
+
+        function initMap() {
+            map = L.map('map').setView([4.60971, -74.08175], 12);
+
+            // Agregar capa de mapa OpenStreetMap
+            L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+            }).addTo(map);
+
+            // Marcador de residencia
+            markerResidencia = L.marker([4.60971, -74.08175], { draggable: true })
+                .addTo(map)
+                .bindPopup("Residencia")
+                .openPopup();
+
+            // Actualiza las coordenadas de residencia en los inputs al mover el marcador
+            markerResidencia.on('dragend', function () {
+                const position = markerResidencia.getLatLng();
+                document.getElementById('lat_residencia').value = position.lat;
+                document.getElementById('lon_residencia').value = position.lng;
+                document.getElementById('lat_residencia_text').value = position.lat;
+                document.getElementById('lon_residencia_text').value = position.lng;
+            });
+
+            // Marcador de trabajo
+            markerTrabajo = L.marker([4.60971, -74.08175], { draggable: true })
+                .addTo(map)
+                .bindPopup("Trabajo");
+
+            // Actualiza las coordenadas de trabajo en los inputs al mover el marcador
+            markerTrabajo.on('dragend', function () {
+                const position = markerTrabajo.getLatLng();
+                document.getElementById('lat_trabajo').value = position.lat;
+                document.getElementById('lon_trabajo').value = position.lng;
+                document.getElementById('lat_trabajo_text').value = position.lat;
+                document.getElementById('lon_trabajo_text').value = position.lng;
+            });
+        }
+
+        initMap();
+
+        // Enviar datos del formulario
+        document.getElementById('formEstudiante').addEventListener('submit', function (event) {
+            event.preventDefault();
+            const cedula = document.getElementById('cedula').value;
+            const nombres = document.getElementById('nombres').value;
+            const apellidos = document.getElementById('apellidos').value;
+            const direccionResidencia = document.getElementById('direccion_residencia').value;
+            const direccionTrabajo = document.getElementById('direccion_trabajo').value;
+
+            const latResidencia = document.getElementById('lat_residencia').value;
+            const lonResidencia = document.getElementById('lon_residencia').value;
+            const latTrabajo = document.getElementById('lat_trabajo').value;
+            const lonTrabajo = document.getElementById('lon_trabajo').value;
+
+            if (latResidencia === "" || lonResidencia === "" || latTrabajo === "" || lonTrabajo === "") {
+                alert("Por favor, selecciona las ubicaciones en el mapa.");
+                return;
+            }
+
+            const data = {
+                cedula,
+                nombres,
+                apellidos,
+                direccion_residencia: direccionResidencia,
+                lat_residencia: latResidencia,
+                lon_residencia: lonResidencia,
+                direccion_trabajo: direccionTrabajo,
+                lat_trabajo: latTrabajo,
+                lon_trabajo: lonTrabajo
+            };
+
+            fetch('http://localhost:5000/estudiantes', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(data => alert(data.message))
+            .catch(error => console.error('Error:', error));
+        });
+    </script>
+</body>
+</html>
